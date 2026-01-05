@@ -42,6 +42,11 @@ final class FailsafeTelemetryTest extends AbstractFailsafeInstrumentationTest {
   }
 
   @Test
+  void captureCircuitBreakerMetrics() {
+    captureCircuitBreakerMetrics("testing");
+  }
+
+  @Test
   void captureRetryPolicyMetrics() {
     captureRetryPolicyMetrics("testing");
   }

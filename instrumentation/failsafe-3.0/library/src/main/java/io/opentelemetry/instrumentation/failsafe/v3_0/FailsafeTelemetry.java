@@ -15,6 +15,7 @@ import dev.failsafe.CircuitBreaker;
 import dev.failsafe.CircuitBreakerConfig;
 import dev.failsafe.RetryPolicy;
 import dev.failsafe.RetryPolicyConfig;
+import dev.failsafe.event.CircuitBreakerStateChangedEvent;
 import dev.failsafe.event.EventListener;
 import dev.failsafe.event.ExecutionCompletedEvent;
 import io.opentelemetry.api.OpenTelemetry;
@@ -22,7 +23,6 @@ import io.opentelemetry.api.common.AttributeKey;
 import io.opentelemetry.api.common.Attributes;
 import io.opentelemetry.api.metrics.LongCounter;
 import io.opentelemetry.api.metrics.LongHistogram;
-import io.opentelemetry.api.metrics.Meter;
 import java.util.Arrays;
 
 /** Entrypoint for instrumenting Failsafe components. */
@@ -56,19 +56,8 @@ public final class FailsafeTelemetry {
   public <R> CircuitBreaker<R> createCircuitBreaker(
       CircuitBreaker<R> delegate, String circuitBreakerName) {
     CircuitBreakerConfig<R> userConfig = delegate.getConfig();
-    Meter meter = openTelemetry.getMeter(INSTRUMENTATION_NAME);
-    LongCounter executionCounter =
-        meter
-            .counterBuilder("failsafe.circuit_breaker.execution.count")
-            .setDescription("Count of circuit breaker executions.")
-            .setUnit("{execution}")
-            .build();
-    LongCounter stateChangesCounter =
-        meter
-            .counterBuilder("failsafe.circuit_breaker.state_change.count")
-            .setDescription("Count of circuit breaker state changes.")
-            .setUnit("{execution}")
-            .build();
+    LongCounter executionCounter = buildCircuitBreakerExecutionCounter();
+    LongCounter stateChangesCounter = buildCircuitBreakerStateChangeCounter();
     Attributes attributes = Attributes.of(CIRCUIT_BREAKER_NAME, circuitBreakerName);
     return CircuitBreaker.builder(userConfig)
         .onFailure(buildInstrumentedFailureListener(userConfig, executionCounter, attributes))
@@ -106,6 +95,22 @@ public final class FailsafeTelemetry {
    * Returns an instrumented failure listener.
    *
    * @param delegate user policy configuration
+   * @param circuitBreakerName identifier for the circuit breaker being built
+   * @param <R> {@link CircuitBreakerConfig}'s result type
+   * @return instrumented failure listener
+   */
+  public <R> EventListener<ExecutionCompletedEvent<R>> createInstrumentedFailureListener(
+      CircuitBreakerConfig<R> delegate, String circuitBreakerName) {
+    LongCounter executionCounter = buildCircuitBreakerExecutionCounter();
+    Attributes attributes = Attributes.of(CIRCUIT_BREAKER_NAME, circuitBreakerName);
+    return CircuitBreakerEventListenerBuilders.buildInstrumentedFailureListener(
+        delegate, executionCounter, attributes);
+  }
+
+  /**
+   * Returns an instrumented failure listener.
+   *
+   * @param delegate user policy configuration
    * @param retryPolicyName identifier for the policy being built
    * @param <R> {@link RetryPolicyConfig}'s result type
    * @return instrumented failure listener
@@ -123,6 +128,22 @@ public final class FailsafeTelemetry {
    * Returns an instrumented success listener.
    *
    * @param delegate user policy configuration
+   * @param circuitBreakerName identifier for the circuit breaker being built
+   * @param <R> {@link CircuitBreakerConfig}'s result type
+   * @return instrumented success listener
+   */
+  public <R> EventListener<ExecutionCompletedEvent<R>> createInstrumentedSuccessListener(
+      CircuitBreakerConfig<R> delegate, String circuitBreakerName) {
+    LongCounter executionCounter = buildCircuitBreakerExecutionCounter();
+    Attributes attributes = Attributes.of(CIRCUIT_BREAKER_NAME, circuitBreakerName);
+    return CircuitBreakerEventListenerBuilders.buildInstrumentedSuccessListener(
+        delegate, executionCounter, attributes);
+  }
+
+  /**
+   * Returns an instrumented success listener.
+   *
+   * @param delegate user policy configuration
    * @param retryPolicyName identifier for the policy being built
    * @param <R> {@link RetryPolicyConfig}'s result type
    * @return instrumented success listener
@@ -134,6 +155,69 @@ public final class FailsafeTelemetry {
     Attributes attributes = Attributes.of(RETRY_POLICY_NAME, retryPolicyName);
     return RetryPolicyEventListenerBuilders.buildInstrumentedSuccessListener(
         delegate, executionCounter, attemptsHistogram, attributes);
+  }
+
+  /**
+   * Returns an instrumented open circuit breaker listener.
+   *
+   * @param delegate user policy configuration
+   * @param circuitBreakerName identifier for the circuit breaker being built
+   * @return instrumented open circuit breaker listener
+   */
+  public <R> EventListener<CircuitBreakerStateChangedEvent> createInstrumentedOpenListener(
+      CircuitBreakerConfig<R> delegate, String circuitBreakerName) {
+    LongCounter stateChangeCounter = buildCircuitBreakerStateChangeCounter();
+    Attributes attributes = Attributes.of(CIRCUIT_BREAKER_NAME, circuitBreakerName);
+    return CircuitBreakerEventListenerBuilders.buildInstrumentedOpenListener(
+        delegate, stateChangeCounter, attributes);
+  }
+
+  /**
+   * Returns an instrumented half-open circuit breaker listener.
+   *
+   * @param delegate user policy configuration
+   * @param circuitBreakerName identifier for the circuit breaker being built
+   * @return instrumented half-open circuit breaker listener
+   */
+  public <R> EventListener<CircuitBreakerStateChangedEvent> createInstrumentedHalfOpenListener(
+      CircuitBreakerConfig<R> delegate, String circuitBreakerName) {
+    LongCounter stateChangeCounter = buildCircuitBreakerStateChangeCounter();
+    Attributes attributes = Attributes.of(CIRCUIT_BREAKER_NAME, circuitBreakerName);
+    return CircuitBreakerEventListenerBuilders.buildInstrumentedHalfOpenListener(
+        delegate, stateChangeCounter, attributes);
+  }
+
+  /**
+   * Returns an instrumented closed circuit breaker listener.
+   *
+   * @param delegate user policy configuration
+   * @param circuitBreakerName identifier for the circuit breaker being built
+   * @return instrumented closed circuit breaker listener
+   */
+  public <R> EventListener<CircuitBreakerStateChangedEvent> createInstrumentedCloseListener(
+      CircuitBreakerConfig<R> delegate, String circuitBreakerName) {
+    LongCounter stateChangeCounter = buildCircuitBreakerStateChangeCounter();
+    Attributes attributes = Attributes.of(CIRCUIT_BREAKER_NAME, circuitBreakerName);
+    return CircuitBreakerEventListenerBuilders.buildInstrumentedCloseListener(
+        delegate, stateChangeCounter, attributes);
+  }
+
+  private LongCounter buildCircuitBreakerExecutionCounter() {
+    return openTelemetry
+        .getMeter(INSTRUMENTATION_NAME)
+        .counterBuilder("failsafe.circuit_breaker.execution.count")
+        .setDescription("Count of circuit breaker executions.")
+        .setUnit("{execution}")
+        .build();
+  }
+
+  private LongCounter buildCircuitBreakerStateChangeCounter() {
+    return openTelemetry
+        .getMeter(INSTRUMENTATION_NAME)
+        .counterBuilder("failsafe.circuit_breaker.state_change.count")
+        .setDescription("Count of circuit breaker state changes.")
+        .setUnit("{execution}")
+        .build();
   }
 
   private LongCounter buildRetryPolicyExecutionCounter() {

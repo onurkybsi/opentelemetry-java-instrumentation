@@ -10,7 +10,6 @@ import dev.failsafe.RetryPolicy;
 import io.opentelemetry.instrumentation.failsafe.AbstractFailsafeInstrumentationTest;
 import io.opentelemetry.instrumentation.testing.junit.AgentInstrumentationExtension;
 import io.opentelemetry.instrumentation.testing.junit.InstrumentationExtension;
-import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 
@@ -33,10 +32,9 @@ class FailsafeInstrumentationTest extends AbstractFailsafeInstrumentationTest {
     return userRetryPolicy;
   }
 
-  @Override
-  @Disabled
+  @Test
   public void captureCircuitBreakerMetrics() {
-    // TODO: Will be enabled once Java agent CircuitBreaker instrumentation is added.
+    captureCircuitBreakerMetrics(null);
   }
 
   @Test

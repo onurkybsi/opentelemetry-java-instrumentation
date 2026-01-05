@@ -21,7 +21,6 @@ import java.util.Objects;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Consumer;
 import javax.annotation.Nullable;
-import org.junit.jupiter.api.Test;
 
 public abstract class AbstractFailsafeInstrumentationTest {
   protected abstract InstrumentationExtension testing();
@@ -30,8 +29,7 @@ public abstract class AbstractFailsafeInstrumentationTest {
 
   protected abstract RetryPolicy<Object> configure(RetryPolicy<Object> userRetryPolicy);
 
-  @Test
-  public void captureCircuitBreakerMetrics() {
+  protected void captureCircuitBreakerMetrics(@Nullable String expectedCircuitBreakerName) {
     // given
     CircuitBreaker<Object> userCircuitBreaker =
         CircuitBreaker.builder()
@@ -41,6 +39,16 @@ public abstract class AbstractFailsafeInstrumentationTest {
             .withSuccessThreshold(2)
             .build();
     CircuitBreaker<Object> instrumentedCircuitBreaker = configure(userCircuitBreaker);
+    captureCircuitBreakerMetrics(
+        instrumentedCircuitBreaker,
+        expectedCircuitBreakerName != null
+            ? expectedCircuitBreakerName
+            : instrumentedCircuitBreaker.toString());
+  }
+
+  private void captureCircuitBreakerMetrics(
+      CircuitBreaker<Object> instrumentedCircuitBreaker, String expectedCircuitBreakerName) {
+    // given
 
     // when
     for (int i = 0; i < 5; i++) {
@@ -64,9 +72,15 @@ public abstract class AbstractFailsafeInstrumentationTest {
                             sum.isMonotonic()
                                 .hasPointsSatisfying(
                                     buildCircuitBreakerAssertion(
-                                        2, "failsafe.circuit_breaker.outcome", "failure"),
+                                        2,
+                                        expectedCircuitBreakerName,
+                                        "failsafe.circuit_breaker.outcome",
+                                        "failure"),
                                     buildCircuitBreakerAssertion(
-                                        3, "failsafe.circuit_breaker.outcome", "success"))),
+                                        3,
+                                        expectedCircuitBreakerName,
+                                        "failsafe.circuit_breaker.outcome",
+                                        "success"))),
             metricAssert ->
                 metricAssert
                     .hasName("failsafe.circuit_breaker.state_change.count")
@@ -75,11 +89,20 @@ public abstract class AbstractFailsafeInstrumentationTest {
                             sum.isMonotonic()
                                 .hasPointsSatisfying(
                                     buildCircuitBreakerAssertion(
-                                        1, "failsafe.circuit_breaker.state", "open"),
+                                        1,
+                                        expectedCircuitBreakerName,
+                                        "failsafe.circuit_breaker.state",
+                                        "open"),
                                     buildCircuitBreakerAssertion(
-                                        1, "failsafe.circuit_breaker.state", "half_open"),
+                                        1,
+                                        expectedCircuitBreakerName,
+                                        "failsafe.circuit_breaker.state",
+                                        "half_open"),
                                     buildCircuitBreakerAssertion(
-                                        1, "failsafe.circuit_breaker.state", "closed"))));
+                                        1,
+                                        expectedCircuitBreakerName,
+                                        "failsafe.circuit_breaker.state",
+                                        "closed"))));
   }
 
   protected void captureRetryPolicyMetrics(@Nullable String expectedPolicyName) {
@@ -163,12 +186,15 @@ public abstract class AbstractFailsafeInstrumentationTest {
   }
 
   private static Consumer<LongPointAssert> buildCircuitBreakerAssertion(
-      long expectedValue, String expectedAttributeKey, String expectedAttributeValue) {
+      long expectedValue,
+      String expectedCircuitBreakerName,
+      String expectedAttributeKey,
+      String expectedAttributeValue) {
     return longSumAssert ->
         longSumAssert
             .hasValue(expectedValue)
             .hasAttributesSatisfyingExactly(
-                equalTo(stringKey("failsafe.circuit_breaker.name"), "testing"),
+                equalTo(stringKey("failsafe.circuit_breaker.name"), expectedCircuitBreakerName),
                 equalTo(stringKey(expectedAttributeKey), expectedAttributeValue));
   }
 
