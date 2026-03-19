@@ -121,3 +121,4 @@ grpc-1.6:javaagent
 grpc-1.6:library
 grpc-1.6:testing
 guava-10.0:javaagent
+gwt-2.0:javaagent
