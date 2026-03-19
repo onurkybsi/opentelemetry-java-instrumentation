@@ -124,3 +124,4 @@ guava-10.0:javaagent
 gwt-2.0:javaagent
 guava-10.0:library
 helidon-4.3:library
+helidon-4.3:javaagent
