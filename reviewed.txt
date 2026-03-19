@@ -287,3 +287,4 @@ logback-appender-1.0:javaagent
 log4j-mdc-1.2:javaagent
 logback-appender-1.0:library
 logback-appender-1.0:testing
+logback-mdc-1.0:javaagent
