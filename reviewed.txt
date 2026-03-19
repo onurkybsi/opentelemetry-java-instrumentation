@@ -233,3 +233,4 @@ jms-common:javaagent-unit-tests
 jmx-metrics:library
 testing-apps:camel-testing-app
 jodd-http-4.2:javaagent
+testing-apps:testing-webapp
