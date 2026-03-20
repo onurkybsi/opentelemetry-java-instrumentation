@@ -401,3 +401,4 @@ redisson-3.17:javaagent
 resources:library
 redisson-common:testing
 restlet-1.1:javaagent
+restlet-1.1:library
