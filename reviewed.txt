@@ -505,3 +505,4 @@ spring-ws-2.0:testing
 starters:spring-boot-starter
 spymemcached-2.12:javaagent
 starters:zipkin-spring-boot-starter
+struts-2.3:javaagent
