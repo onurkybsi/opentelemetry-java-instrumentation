@@ -478,3 +478,4 @@ spring-kafka-2.7:javaagent
 spring-kafka-2.7:testing
 spring-pulsar-1.0:javaagent
 spring-rabbit-1.0:javaagent
+spring-rmi-4.0:javaagent
