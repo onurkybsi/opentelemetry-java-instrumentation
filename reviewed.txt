@@ -515,3 +515,4 @@ tomcat-jdbc:javaagent
 twilio-6.6:javaagent
 undertow-1.4:javaagent
 undertow-1.4:bootstrap
+vaadin-14.2:javaagent
