@@ -22,6 +22,7 @@ import static io.opentelemetry.semconv.incubating.MessagingIncubatingAttributes.
 import static java.util.Arrays.asList;
 import static org.assertj.core.api.Assertions.assertThat;
 
+import io.opentelemetry.api.common.AttributeKey;
 import io.opentelemetry.api.trace.Span;
 import io.opentelemetry.api.trace.SpanContext;
 import io.opentelemetry.api.trace.SpanKind;
@@ -47,6 +48,8 @@ import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 
 class KafkaStreamsDefaultTest extends KafkaStreamsBaseTest {
+  protected static final AttributeKey<String> MESSAGING_KAFKA_BOOTSTRAP_SERVERS =
+      AttributeKey.stringKey("messaging.kafka.bootstrap.servers");
 
   @SuppressWarnings("deprecation") // using deprecated semconv
   @DisplayName("test kafka produce and consume with streams in-between")
@@ -118,7 +121,11 @@ class KafkaStreamsDefaultTest extends KafkaStreamsBaseTest {
                               MESSAGING_DESTINATION_PARTITION_ID,
                               k -> k.isInstanceOf(String.class)),
                           equalTo(MESSAGING_KAFKA_MESSAGE_OFFSET, 0),
-                          equalTo(MESSAGING_KAFKA_MESSAGE_KEY, "10")));
+                          equalTo(MESSAGING_KAFKA_MESSAGE_KEY, "10"),
+                          satisfies(
+                              MESSAGING_KAFKA_BOOTSTRAP_SERVERS,
+                              stringAssert ->
+                                  stringAssert.matches("^localhost:\\d+(,localhost:\\d+)*$"))));
           producerPendingRef.set(trace.getSpan(0));
         },
         trace -> {
@@ -188,7 +195,11 @@ class KafkaStreamsDefaultTest extends KafkaStreamsBaseTest {
                           satisfies(
                               MESSAGING_DESTINATION_PARTITION_ID,
                               k -> k.isInstanceOf(String.class)),
-                          equalTo(MESSAGING_KAFKA_MESSAGE_OFFSET, 0)));
+                          equalTo(MESSAGING_KAFKA_MESSAGE_OFFSET, 0),
+                          satisfies(
+                              MESSAGING_KAFKA_BOOTSTRAP_SERVERS,
+                              stringAssert ->
+                                  stringAssert.matches("^localhost:\\d+(,localhost:\\d+)*$"))));
 
           producerProcessedRef.set(trace.getSpan(2));
         },

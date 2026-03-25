@@ -23,6 +23,7 @@ import static java.nio.charset.StandardCharsets.UTF_8;
 import static java.util.Arrays.asList;
 import static java.util.Collections.singleton;
 
+import io.opentelemetry.api.common.AttributeKey;
 import io.opentelemetry.api.trace.SpanKind;
 import io.opentelemetry.instrumentation.testing.internal.AutoCleanupExtension;
 import io.opentelemetry.instrumentation.testing.junit.AgentInstrumentationExtension;
@@ -70,6 +71,9 @@ public abstract class AbstractReactorKafkaTest {
   protected static final InstrumentationExtension testing = AgentInstrumentationExtension.create();
 
   @RegisterExtension static final AutoCleanupExtension cleanup = AutoCleanupExtension.create();
+
+  protected static final AttributeKey<String> MESSAGING_KAFKA_BOOTSTRAP_SERVERS =
+      AttributeKey.stringKey("messaging.kafka.bootstrap.servers");
 
   static KafkaContainer kafka;
   protected static KafkaSender<String, String> sender;
@@ -196,7 +200,10 @@ public abstract class AbstractReactorKafkaTest {
                     stringKey("messaging.client_id"),
                     stringAssert -> stringAssert.startsWith("producer")),
                 satisfies(MESSAGING_DESTINATION_PARTITION_ID, AbstractStringAssert::isNotEmpty),
-                satisfies(MESSAGING_KAFKA_MESSAGE_OFFSET, AbstractLongAssert::isNotNegative)));
+                satisfies(MESSAGING_KAFKA_MESSAGE_OFFSET, AbstractLongAssert::isNotNegative),
+                satisfies(
+                    MESSAGING_KAFKA_BOOTSTRAP_SERVERS,
+                    stringAssert -> stringAssert.matches("^localhost:\\d+(,localhost:\\d+)*$"))));
     String messageKey = record.key();
     if (messageKey != null) {
       assertions.add(equalTo(MESSAGING_KAFKA_MESSAGE_KEY, messageKey));
