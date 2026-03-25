@@ -14,11 +14,15 @@ import io.opentelemetry.context.propagation.TextMapSetter;
 import io.opentelemetry.instrumentation.api.instrumenter.Instrumenter;
 import io.opentelemetry.instrumentation.kafkaclients.common.v0_11.internal.KafkaHeadersSetter;
 import io.opentelemetry.instrumentation.kafkaclients.common.v0_11.internal.KafkaProducerRequest;
+import io.opentelemetry.instrumentation.kafkaclients.common.v0_11.internal.KafkaUtil;
+import java.util.Map;
 import java.util.concurrent.Future;
 import java.util.function.BiFunction;
 import java.util.logging.Logger;
+import javax.annotation.Nullable;
 import org.apache.kafka.clients.producer.Callback;
 import org.apache.kafka.clients.producer.Producer;
+import org.apache.kafka.clients.producer.ProducerConfig;
 import org.apache.kafka.clients.producer.ProducerRecord;
 import org.apache.kafka.clients.producer.RecordMetadata;
 import org.apache.kafka.common.header.Headers;
@@ -37,14 +41,17 @@ public class KafkaProducerTelemetry {
   private final TextMapPropagator propagator;
   private final Instrumenter<KafkaProducerRequest, RecordMetadata> producerInstrumenter;
   private final boolean producerPropagationEnabled;
+  @Nullable private final Map<String, Object> producerConfigs;
 
   public KafkaProducerTelemetry(
       TextMapPropagator propagator,
       Instrumenter<KafkaProducerRequest, RecordMetadata> producerInstrumenter,
-      boolean producerPropagationEnabled) {
+      boolean producerPropagationEnabled,
+      Map<String, Object> producerConfigs) {
     this.propagator = propagator;
     this.producerInstrumenter = producerInstrumenter;
     this.producerPropagationEnabled = producerPropagationEnabled;
+    this.producerConfigs = producerConfigs;
   }
 
   /**
@@ -55,7 +62,8 @@ public class KafkaProducerTelemetry {
   public <K, V> void buildAndInjectSpan(ProducerRecord<K, V> record, String clientId) {
     Context parentContext = Context.current();
 
-    KafkaProducerRequest request = KafkaProducerRequest.create(record, clientId);
+    KafkaProducerRequest request =
+        KafkaProducerRequest.create(record, clientId, bootstrapServers());
     if (!producerInstrumenter.shouldStart(parentContext, request)) {
       return;
     }
@@ -86,7 +94,8 @@ public class KafkaProducerTelemetry {
       BiFunction<ProducerRecord<K, V>, Callback, Future<RecordMetadata>> sendFn) {
     Context parentContext = Context.current();
 
-    KafkaProducerRequest request = KafkaProducerRequest.create(record, producer);
+    KafkaProducerRequest request =
+        KafkaProducerRequest.create(record, producer, bootstrapServers());
     if (!producerInstrumenter.shouldStart(parentContext, request)) {
       return sendFn.apply(record, callback);
     }
@@ -97,6 +106,14 @@ public class KafkaProducerTelemetry {
     try (Scope ignored = context.makeCurrent()) {
       return sendFn.apply(record, new ProducerCallback(callback, parentContext, context, request));
     }
+  }
+
+  private String bootstrapServers() {
+    if (producerConfigs == null) {
+      return null;
+    }
+    Object servers = producerConfigs.get(ProducerConfig.BOOTSTRAP_SERVERS_CONFIG);
+    return KafkaUtil.extractBootstrapServers(servers);
   }
 
   private class ProducerCallback implements Callback {

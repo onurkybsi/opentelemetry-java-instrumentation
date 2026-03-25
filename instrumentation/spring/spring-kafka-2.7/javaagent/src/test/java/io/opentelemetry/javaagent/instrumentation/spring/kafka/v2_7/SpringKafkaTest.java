@@ -95,7 +95,8 @@ class SpringKafkaTest extends AbstractSpringKafkaTest {
                           equalTo(MESSAGING_KAFKA_MESSAGE_KEY, "10"),
                           satisfies(
                               MESSAGING_CLIENT_ID,
-                              stringAssert -> stringAssert.startsWith("producer"))));
+                              stringAssert -> stringAssert.startsWith("producer")),
+                          MESSAGING_KAFKA_BOOTSTRAP_SERVERS_ASSERTION));
 
           producer.set(trace.getSpan(1));
         },
@@ -214,7 +215,8 @@ class SpringKafkaTest extends AbstractSpringKafkaTest {
                             equalTo(MESSAGING_KAFKA_MESSAGE_KEY, "10"),
                             satisfies(
                                 MESSAGING_CLIENT_ID,
-                                stringAssert -> stringAssert.startsWith("producer"))));
+                                stringAssert -> stringAssert.startsWith("producer")),
+                            MESSAGING_KAFKA_BOOTSTRAP_SERVERS_ASSERTION));
 
             producer.set(trace.getSpan(1));
           },
@@ -271,7 +273,8 @@ class SpringKafkaTest extends AbstractSpringKafkaTest {
                             equalTo(MESSAGING_KAFKA_MESSAGE_KEY, "10"),
                             satisfies(
                                 MESSAGING_CLIENT_ID,
-                                stringAssert -> stringAssert.startsWith("producer"))));
+                                stringAssert -> stringAssert.startsWith("producer")),
+                            MESSAGING_KAFKA_BOOTSTRAP_SERVERS_ASSERTION));
 
             producer.set(trace.getSpan(1));
           },
@@ -342,7 +345,8 @@ class SpringKafkaTest extends AbstractSpringKafkaTest {
                           equalTo(MESSAGING_KAFKA_MESSAGE_KEY, "10"),
                           satisfies(
                               MESSAGING_CLIENT_ID,
-                              stringAssert -> stringAssert.startsWith("producer"))),
+                              stringAssert -> stringAssert.startsWith("producer")),
+                          MESSAGING_KAFKA_BOOTSTRAP_SERVERS_ASSERTION),
               span ->
                   span.hasName("testBatchTopic publish")
                       .hasKind(SpanKind.PRODUCER)
@@ -358,7 +362,8 @@ class SpringKafkaTest extends AbstractSpringKafkaTest {
                           equalTo(MESSAGING_KAFKA_MESSAGE_KEY, "20"),
                           satisfies(
                               MESSAGING_CLIENT_ID,
-                              stringAssert -> stringAssert.startsWith("producer"))));
+                              stringAssert -> stringAssert.startsWith("producer")),
+                          MESSAGING_KAFKA_BOOTSTRAP_SERVERS_ASSERTION));
 
           producer1.set(trace.getSpan(1));
           producer2.set(trace.getSpan(2));
@@ -431,7 +436,8 @@ class SpringKafkaTest extends AbstractSpringKafkaTest {
                           equalTo(MESSAGING_KAFKA_MESSAGE_KEY, "10"),
                           satisfies(
                               MESSAGING_CLIENT_ID,
-                              stringAssert -> stringAssert.startsWith("producer"))));
+                              stringAssert -> stringAssert.startsWith("producer")),
+                          MESSAGING_KAFKA_BOOTSTRAP_SERVERS_ASSERTION));
 
           producer.set(trace.getSpan(1));
         });
