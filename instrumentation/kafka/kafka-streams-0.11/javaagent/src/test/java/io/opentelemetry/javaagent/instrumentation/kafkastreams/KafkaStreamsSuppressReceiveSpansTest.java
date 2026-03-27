@@ -107,7 +107,11 @@ class KafkaStreamsSuppressReceiveSpansTest extends KafkaStreamsBaseTest {
                                 MESSAGING_DESTINATION_PARTITION_ID,
                                 k -> k.isInstanceOf(String.class)),
                             equalTo(MESSAGING_KAFKA_MESSAGE_OFFSET, 0),
-                            equalTo(MESSAGING_KAFKA_MESSAGE_KEY, "10")),
+                            equalTo(MESSAGING_KAFKA_MESSAGE_KEY, "10"),
+                            satisfies(
+                                MESSAGING_KAFKA_BOOTSTRAP_SERVERS,
+                                stringAssert ->
+                                    stringAssert.matches("^localhost:\\d+(,localhost:\\d+)*$"))),
                 // kafka-stream CONSUMER
                 span -> {
                   List<AttributeAssertion> assertions =
@@ -155,7 +159,11 @@ class KafkaStreamsSuppressReceiveSpansTest extends KafkaStreamsBaseTest {
                           satisfies(
                               MESSAGING_DESTINATION_PARTITION_ID,
                               k -> k.isInstanceOf(String.class)),
-                          equalTo(MESSAGING_KAFKA_MESSAGE_OFFSET, 0));
+                          equalTo(MESSAGING_KAFKA_MESSAGE_OFFSET, 0),
+                          satisfies(
+                              MESSAGING_KAFKA_BOOTSTRAP_SERVERS,
+                              stringAssert ->
+                                  stringAssert.matches("^localhost:\\d+(,localhost:\\d+)*$")));
                 },
                 // kafka-clients CONSUMER process
                 span -> {
